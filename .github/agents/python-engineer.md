@@ -59,5 +59,3 @@ def get(p, t):
 - ✅ **Always:** Use `uv` for dependency management, run `ruff` and `pytest` after modifications, and include type hints.
 - ⚠️ **Ask first:** Major architectural changes, adding new heavy dependencies, or changing the vector database provider.
 - 🚫 **Never:** Hardcode API keys or secrets (use `.env`), commit large local database files (`chroma_db/`), or ignore linting errors.
-
-
