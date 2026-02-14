@@ -1,72 +1,37 @@
-# rag-cosense: Copilot Instructions
+# rag-cosense: Global System Instructions
 
-This repository is a Retrieval-Augmented Generation (RAG) system for Cosense (Scrapbox) data. It consists of a Python-based backend for data processing and retrieval, and a TypeScript/React-based frontend for the user interface.
+This repository is a Retrieval-Augmented Generation (RAG) system for Cosense (Scrapbox) data. It provides an AI-powered interface to query and interact with personal or team knowledge bases stored in Cosense.
 
-## 🛠 Tech Stack & Runtimes
+## 🏗 System Architecture
 
-- **Backend:** Python 3.12+ 
-  - Package Manager: `uv`
-  - Libraries: `langchain`, `langchain-openai`, `chromadb`, `httpx`
-  - Tooling: `ruff` (lint/format), `mypy` (types), `pytest`
-- **Frontend:** TypeScript, React
-  - Build Tool: `Vite`
-  - Styling: `Tailwind CSS`
-  - Testing: `Vitest`, `Playwright` (E2E)
-  - Tooling: `ESLint`, `Prettier`
-
-## 🏗 Build & Validation Flow
-
-Always follow this sequence when setting up or validating changes.
-
-### 1. Bootstrapping
-- **Python:** `uv sync` (Initializes environment and installs dependencies from `pyproject.toml`)
-- **Frontend:** `npm install` (Installs node modules)
-
-### 2. Development & Running
-- **Backend Agent:** `uv run agent.py`
-- **Frontend Dev:** `npm run dev`
-
-### 3. Validation (Linter & Tests)
-Before submitting any changes, you **must** run these commands:
-
-#### Backend
-- **Lint & Fix:** `uv run ruff check --fix .`
-- **Format:** `uv run ruff format .`
-- **Type Check:** `uv run mypy .`
-- **Test:** `uv run pytest`
-
-#### Frontend
-- **Lint:** `npm run lint`
-- **Type Check:** `npm run type-check`
-- **Test:** `npm run test`
+The project follows a decoupled client-server architecture:
+- **Backend Hub:** Responsible for document processing, embedding, vector storage (ChromaDB), and retrieval logic using LangChain.
+- **Frontend Interface:** A modern React-based SPA that provides a chat-like interface for interacting with the RAG system.
 
 ## 📁 Project Layout
 
-- `src/` - Core source code.
-  - `src/backend/` - Python retrieval logic, agent definitions, and vector store management.
-  - `src/frontend/` - React components, hooks, and state management.
-- `tests/` - Backend unit and integration tests.
-- `e2e/` - Playwright end-to-end tests.
-- `.github/agents/` - Specific persona instructions for different roles.
-- `pyproject.toml` - Python dependencies and tool configurations.
-- `package.json` - Frontend dependencies and scripts.
+The project is organized as a monorepo where each component is its own project with internal `src` and `tests` directories.
 
-## ⚠️ Key Rules & Boundaries
+- `backend/` - Python-based RAG logic and API.
+  - `backend/src/` - Core retrieval logic, agent definitions, and vector store management.
+  - `backend/tests/` - Backend unit and integration tests.
+- `frontend/` - React-based SPA.
+  - `frontend/src/` - React components, hooks, and state management.
+  - `frontend/tests/` - Frontend unit and component tests.
+- `e2e/` - Playwright end-to-end tests covering the full system.
+- `.github/instructions/` - Concrete, path-specific coding standards and technical rules.
+- `.github/agents/` - Persona-specific instructions for different AI agent roles.
 
-1. **Always use \`uv\`**: For all Python-related tasks, use \`uv\` instead of raw \`pip\` or \`venv\`.
-2. **Type Safety**: TypeScript on the frontend and type hints in Python are mandatory.
-3. **API Keys**: Never hardcode secrets. Use \`.env\` files (documented in \`README.md\` templates).
-4. **Environment Variables**:
-   - Backend: Standard \`.env\`
-   - Frontend: \`VITE_\` prefix required for client-side access.
-5. **Testing**: New features should include corresponding tests in \`tests/\` or \`*.test.ts\`.
+
+## ⚠️ High-Level Principles & Boundaries
+
+1. **Security First**: Never hardcode secrets. Use `.env` files for ALL API keys and sensitive configuration.
+2. **Environment Isolation**:
+   - Backend configurations stay in standard `.env`.
+   - Frontend configurations requiring client-side access must use `VITE_` prefix.
+3. **Cross-Domain Consistency**: Ensure the API contracts between Python and TypeScript are strictly followed.
+4. **Validation Pipeline**: No code should be merged without passing linting, type checks, and relevant tests.
 
 ## 🤖 Internal Agent Instructions
-Refer to specialized instructions in \`.github/agents/\` for role-specific guidance:
-- \`python-engineer.md\`: Backend/RAG logic.
-- \`frontend-engineer.md\`: React/UI development.
-- \`test-engineer.md\`: Testing strategies.
-- \`linter-engineer.md\`: Code quality and formatting.
-- \`document-engineer.md\`: Documentation and diagrams.
+Refer to specialized instructions in `.github/agents/` for role-specific guidance. For technical details (libraries, commands, naming), refer to the specific markdown files in `.github/instructions/`.
 
-Trust these instructions as the primary source of truth for workflow and architecture. Only explore if information is missing or outdated.
