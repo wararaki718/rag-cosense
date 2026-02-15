@@ -19,7 +19,8 @@ async def health_check() -> Any:
         "status": "ok",
         "services": {
             "elasticsearch": "unknown",
-            "ollama": "unknown"
+            "ollama": "unknown",
+            "encoder": "unknown"
         }
     }
 
@@ -44,5 +45,16 @@ async def health_check() -> Any:
                 health_status["services"]["ollama"] = f"unexpected status code: {response.status_code}"
     except Exception as e:
         health_status["services"]["ollama"] = f"error: {str(e)}"
+
+    # Check Encoder
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{settings.ENCODER_SERVICE_URL}/health")
+            if response.status_code == 200:
+                health_status["services"]["encoder"] = "connected"
+            else:
+                health_status["services"]["encoder"] = f"unexpected status code: {response.status_code}"
+    except Exception as e:
+        health_status["services"]["encoder"] = f"error: {str(e)}"
 
     return health_status

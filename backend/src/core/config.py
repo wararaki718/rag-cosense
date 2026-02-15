@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     # External Services
     ELASTICSEARCH_URL: str = "http://elasticsearch:9200"
     OLLAMA_BASE_URL: str = "http://ollama:11434"
+    ENCODER_SERVICE_URL: str = "http://encoder:8001"
+    EMBEDDING_MODEL: str = "gemma3"
 
     # Cosense Configuration
     COSENSE_PROJECT_NAME: str = ""

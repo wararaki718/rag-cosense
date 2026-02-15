@@ -20,7 +20,6 @@ graph TD
         
         subgraph Processing_Pipeline [Processing Pipeline]
             Ingestor[Cosense Data Ingestor]
-            Embeddings[Embedding Model]
         end
     end
 
@@ -34,6 +33,7 @@ graph TD
 
     subgraph Infrastructure_Side [Infrastructure]
         LLM[Local LLM - Ollama/Gemma 3]
+        Encoder[Encoder Service - SPLADE]
     end
 
     %% Relationships
@@ -42,13 +42,13 @@ graph TD
     API_Client --- API_Layer
     
     API_Layer --> RAG_Engine
+    RAG_Engine --> Encoder
     RAG_Engine --> Elasticsearch
     RAG_Engine --> LLM
     
     Ingestor --> Cosense_API
-    Ingestor --> Embeddings
-    Embeddings --> Elasticsearch
-    Embeddings --- LLM
+    Ingestor --> Encoder
+    Ingestor --> Elasticsearch
 ```
 
 ## Component Details
@@ -65,6 +65,7 @@ graph TD
 ### Infrastructure / Tools
 - **Elasticsearch**: A distributed search and analytics engine used for both full-text search and vector similarity search.
 - **Ollama**: Local LLM runner providing the model (Gemma 3) for privacy-conscious inference.
+- **Encoder Service**: A specialized service for sparse/dense vector generation (SPLADE).
 
 ### External Integrations
 - **Cosense (Scrapbox)**: The source of truth for the knowledge base.
@@ -73,26 +74,19 @@ graph TD
 
 ### 1. Data Flow
 
-#### Ingestion Flow (Async Syncing)
-1. **Initiate**: Frontend calls `POST /api/index/sync`. Backend returns `task_id` (202 Accepted).
+#### Ingestion Flow (Async Syncing) [IMPLEMENTED]
+1. **Initiate**: Frontend calls `POST /api/v1/index/sync`. Backend returns sync status.
 2. **Fetch**: A background task calls the Cosense API to retrieve page lists and metadata.
-    - *Note*: Implement rate-limiting/throttling to respect Cosense API limits.
-3. **Delta Check**: Compare `last_updated` from API with existing Elasticsearch docs to skip unchanged pages.
-4. **Processing Pipeline**: 
-    - **Clean**: Remove Scrapbox-specific formatting.
-    - **Chunk**: Split via `RecursiveCharacterTextSplitter`.
-    - **Embed**: Call **Ollama** API to generate 1024-dim vectors (Gemma 3).
-5. **Persistence**: Upsert into **Elasticsearch** as hybrid documents (text + vector).
-6. **Reporting**: Background task updates its status (`processing` -> `completed`). 
-7. **Polling**: Frontend calls `GET /api/index/sync/{task_id}` intermittently to update progress UI.
+3. **Chunking**: Split via `RecursiveCharacterTextSplitter`.
+4. **Sparse Embedding**: Call **Encoder Service** (`/encode`) to generate SPLADE sparse vectors.
+5. **Persistence**: Upsert into **Elasticsearch** using `rank_features` for the sparse vector and `text` for content.
 
 #### Query Flow (RAG Pipeline)
 1. **Submit**: Frontend calls `POST /api/chat` with user query and context window (chat history).
-2. **Embed Query**: Backend calls **Ollama** to convert the user's question into a vector.
-3. **Retrieval (Hybrid Search)**: 
-    - **Keywords**: BM25 search for exact matches in the `text` field.
-    - **Semantic**: k-NN search for similar vectors in the `vector` field.
-    - **Rank Fusion**: Use **RRF** (Reciprocal Rank Fusion) via Elasticsearch to merge rankings.
+2. **Embed Query**: Backend calls **Encoder Service** to convert the user's question into a sparse vector.
+3. **Retrieval**: 
+    - **Sparse Search**: Use Elasticsearch `rank_feature` query with the SPLADE vector to find relevant chunks.
+    - **Keyword (Optional)**: Can be combined via Boolean query if needed.
 4. **Context Building**: Extract Top-K (default=5) text chunks as context.
 5. **Prompt Generation**: Construct a prompt containing Context + Chat History + Current Question.
 6. **Inference**: Send prompt to **Ollama (Gemma 3)** for natural language generation.
@@ -151,15 +145,17 @@ Following `api-contract.instructions.md`, all responses wrap data or errors:
   }
   ```
 
-##### 4. `GET /api/status`
+##### 4. `GET /api/v1/health`
 - **Purpose**: System health check.
 - **Response Data**:
   ```json
   {
-    "backend": "up",
-    "elasticsearch": "connected",
-    "ollama": "connected",
-    "model_loaded": "gemma3"
+    "status": "connected",
+    "details": {
+      "elasticsearch": "connected",
+      "ollama": "connected",
+      "encoder": "connected"
+    }
   }
   ```
 
@@ -171,30 +167,27 @@ Following `api-contract.instructions.md`, all responses wrap data or errors:
 - **Indexing Strategy**:
     - **Field Mappings**:
         - `text`: `text` type (Full-text search enabled).
-        - `vector`: `dense_vector` type (Dimensions depend on the embedding model, likely 1024 for Gemma 3 based embeddings).
-        - `metadata`: `keyword` or `date` types for `source_url`, `page_title`, `project_name`, and `updated_at`.
-    - **Chunking**: `RecursiveCharacterTextSplitter` with ~1000 chars and 15% overlap.
-- **Retrieval Logic (Hybrid Search)**:
-    - **Stage 1 (Search)**: Parallel execution of:
-        - **BM25 Search**: Traditional keyword matching. Apply **Boosting** to `page_title` for higher relevance.
-        - **KNN Vector Search**: Semantic similarity search using the query embedding.
-    - **Stage 2 (Reranking)**:
-        - Use **Reciprocal Rank Fusion (RRF)** to combine and rank results from both search methods.
-    - **Stage 3 (Augmentation)**:
-        - Top-K results (e.g., K=5) are passed to the Prompt Template as context.
-- **Technology**: LangChain `ElasticsearchStore` integration.
+        - `sparse_vector`: `rank_features` type (SPLADE token-weight mapping).
+        - `metadata`: `keyword` or `integer` types for `title`, `chunk_id`, and `project`.
+    - **Chunking**: `RecursiveCharacterTextSplitter` with ~1000 chars and 100 char overlap.
+- **Retrieval Logic (Sparse Search)**:
+    - **SPLADE Search**: Use `rank_feature` query in Elasticsearch. This provides high-quality keyword-based semantic search by expanding queries with relevant tokens.
+    - **Technology**: Custom `IndexerService` integration.
 
 ### 4. Local LLM Configuration
 - **Model Runner**: [Ollama](https://ollama.com/)
     - Backend reaches Ollama via internal Docker network: `http://ollama:11434`.
 - **Model Selection**: **Gemma 3 (4b recommended for speed, 12b for quality)**.
     - **Inference**: High-quality natural language generation and instruction following.
-    - **Embeddings**: Used to generate dense vectors for Elasticsearch indexing.
+- **Encoder Service**:
+    - **Model**: `hot-leaf-juice/splade-japanese-v3`.
+    - **Role**: Specialized in Japanese sparse vector generation for search.
 - **Initialization & Model Management**:
     - **Flow**:
-        1. Start Ollama container.
-        2. Automatic pull: A startup script or backend check executes `ollama pull gemma3`.
-        3. Verification: Backend confirms model status via `GET /api/tags`.
+        1. Start Ollama and Encoder containers.
+        2. Automatic pull (Ollama): Backend check executes `ollama pull gemma3`.
+        3. Encoder loads model on startup from Hugging Face.
+    - **Verification**: Backend confirms status via health checks.
 - **System Prompt Design**:
     - "You are a helpful assistant. Use ONLY the provided context snippets to answer. If you don't know, say you don't know."
     - Strict Markdown output for compatibility with the Chat UI.
