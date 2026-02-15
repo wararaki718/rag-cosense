@@ -1,103 +1,105 @@
 # rag-cosense
 
-A Retrieval-Augmented Generation (RAG) system for Cosense (Scrapbox) data. This project provides a seamless way to query your Cosense knowledge base using LLMs through a modern web interface.
+A Retrieval-Augmented Generation (RAG) system for Cosense (Scrapbox) data. This project provides a way to query your Cosense knowledge base using LLMs through a modern interface. It uses hybrid search (sparse vectors via SPLADE) and local LLMs for privacy-conscious interaction.
 
 ## 🚀 Features
 
 - **Cosense (Scrapbox) Integration**: Automatically fetches and indexes pages from your Cosense projects.
-- **RAG Implementation**: Leverages LangChain and ChromaDB for high-quality retrieval and LLM-based answering.
-- **Modern UI**: A responsive React-based frontend built with Vite and Tailwind CSS.
-- **Docker Ready**: Full containerization support for easy deployment and development environment consistency.
-- **AI Agent-Driven Development**: Specialized instructions for various engineering roles (Backend, Frontend, Test, Linter, Infra).
+- **Sparse Vector Search**: Uses SPLADE (encoder service) for high-quality retrieval based on semantic importance.
+- **Elasticsearch Support**: Leverages Elasticsearch for efficient storage and ranking of sparse/text data.
+- **Local LLM**: Integrated with [Ollama](https://ollama.com/) (Gemma 3) for private and secure document-based answering.
+- **Docker Ready**: Full containerization for all services (Backend, Encoder, Elasticsearch, Ollama).
+- **AI Agent-Driven Development**: Specialized instructions for various engineering roles.
 
 ## 🛠 Tech Stack
 
-### Backend
-- **Language**: Python 3.12+
+### Services & Infrastructure
+- **API (Backend)**: FastAPI (Python 3.12+)
+- **Encoder**: SPLADE (Transformers + PyTorch)
+- **Vector Database**: Elasticsearch 8.12+
+- **LLM Runner**: Ollama (Gemma 3)
+- **Orchestration**: Docker Compose
+
+### Tools
 - **Package Manager**: [uv](https://github.com/astral-sh/uv)
 - **AI Framework**: LangChain
-- **Vector Database**: ChromaDB
-- **Tools**: Ruff (Linter/Formatter), Mypy (Type Check), Pytest
-
-### Frontend
-- **Framework**: React / TypeScript
-- **Build Tool**: Vite
-- **Styling**: Tailwind CSS
-- **Testing**: Vitest, Playwright (E2E)
-
-### Infrastructure
-- **Containerization**: Docker, Docker Compose
+- **Analysis**: Ruff (Linter/Formatter), Mypy (Type Check), Pytest
 
 ## 🔧 Setup & Development
 
 ### Prerequisites
-- Python 3.12+
-- Node.js (Latest LTS)
 - Docker & Docker Compose
-- `uv` installed (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
+- `make` (Optional but recommended)
+- `uv` (For local backend development)
 
 ### Initial Setup
-```bash
-# Backend setup
-uv sync
 
-# Frontend setup
-npm install
-```
+1. **Environment Configuration**:
+   ```bash
+   make setup
+   ```
+   Edit the generated `.env` file and provide your `COSENSE_PROJECT_NAME` and `COSENSE_SID` (Found in your browser cookies as `connect.sid`).
+
+2. **Start Services**:
+   ```bash
+   make up
+   ```
+   This will start the Backend, Encoder, Elasticsearch, and Ollama containers.
+
+3. **Initialize LLM**:
+   After starting the services, you need to pull the Gemma 3 model in Ollama:
+   ```bash
+   docker compose exec ollama ollama pull gemma3
+   ```
 
 ### Running the Application
 
-#### Standard Development
-```bash
-# Terminal 1: Backend
-uv run agent.py
+The services will be available at:
+- **Backend API**: `http://localhost:8000`
+- **Encoder API**: `http://localhost:8001`
+- **Elasticsearch**: `http://localhost:9200`
+- **Ollama**: `http://localhost:11434`
 
-# Terminal 2: Frontend
-npm run dev
-```
-
-#### Using Docker
+To sync your Cosense data:
 ```bash
-docker-compose up --build
+curl -X POST http://localhost:8000/api/v1/index/sync
 ```
 
 ## ✅ Validation
 
-Before committing, ensure all checks pass:
-
-### Backend
+### Local Development (Backend)
 ```bash
-uv run ruff check --fix .
-uv run ruff format .
+cd backend
+uv sync
+uv run ruff check .
 uv run mypy .
 uv run pytest
 ```
 
-### Frontend
+### Build & Infrastructure
 ```bash
-npm run lint
-npm run type-check
-npm run test
+make health  # Check if backend is alive
+make ps      # List running services
+make logs    # View service logs
 ```
 
 ## 📁 Project Structure
 
 ```text
 rag-cosense/
-├── src/
-│   ├── backend/     # Python RAG logic & retriever
-│   └── frontend/    # React components & UI logic
-├── tests/           # Backend unit / integration tests
-├── e2e/             # Playwright E2E tests
-├── .github/
-│   ├── agents/      # Specialized persona-based instructions
-│   └── copilot-instructions.md # Project-wide AI guidelines
-├── pyproject.toml
-├── package.json
+├── backend/         # FastAPI service, RAG logic & indexing
+│   ├── src/         # Source code
+│   └── tests/       # Unit & integration tests
+├── encoder/         # SPLADE service for sparse vectors
+├── compose.yml      # Docker Compose configuration
+├── Makefile         # Shortcuts for common commands
+├── architecture.md  # Detailed system architecture
+├── .env.example     # Environment variable template
 └── README.md
 ```
 
 ## 🤖 AI Agents
+This project uses specialized AI agents for development. Refer to [.github/copilot-instructions.md](.github/copilot-instructions.md) and [.github/agents/](.github/agents/) for more details.
 
 This repository is optimized for AI-assisted development. Refer to the specialized personas in `.github/agents/`:
 - **Python Engineer**: Backend & RAG logic.
