@@ -1,29 +1,31 @@
-from typing import List
+from typing import List, Any
 import httpx
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from elasticsearch import AsyncElasticsearch
+from src.services.cosense import CosenseClient
 from src.core.config import settings
 
 class IndexerService:
     """Service for processing and indexing documents into Elasticsearch."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.es = AsyncElasticsearch(settings.ELASTICSEARCH_URL)
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,
             chunk_overlap=100
         )
 
-    async def get_sparse_embeddings(self, text: str) -> dict:
+    async def get_sparse_embeddings(self, text: str) -> dict[str, Any]:
         """Generates a sparse embedding for the given text using the encoder service."""
         url = f"{settings.ENCODER_SERVICE_URL}/encode"
         payload = {"text": text}
         async with httpx.AsyncClient() as client:
             response = await client.post(url, json=payload, timeout=60.0)
             response.raise_for_status()
-            return response.json()["sparse_values"]
+            data: dict[str, Any] = response.json()
+            return data["sparse_values"]
 
-    async def create_index_if_not_exists(self):
+    async def create_index_if_not_exists(self) -> None:
         """Creates the Elasticsearch index with proper mappings if it doesn't exist."""
         index_name = "cosense_pages"
         exists = await self.es.indices.exists(index=index_name)
@@ -47,7 +49,7 @@ class IndexerService:
                 }
             )
 
-    async def sync_pages(self, pages: List[dict], cosense_client):
+    async def sync_pages(self, pages: List[dict[str, Any]], cosense_client: CosenseClient) -> None:
         """Synchronizes a list of pages into Elasticsearch."""
         await self.create_index_if_not_exists()
         
@@ -73,6 +75,6 @@ class IndexerService:
             except Exception as e:
                 print(f"Failed to sync page {title}: {str(e)}")
 
-    async def close(self):
+    async def close(self) -> None:
         """Closes the Elasticsearch connection."""
         await self.es.close()

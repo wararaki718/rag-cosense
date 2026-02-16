@@ -5,7 +5,7 @@ from src.core.config import settings
 class CosenseClient:
     """Client for interacting with the Cosense (Scrapbox) API."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.base_url = "https://scrapbox.io/api"
         self.headers = {"Cookie": f"connect.sid={settings.COSENSE_SID}"} if settings.COSENSE_SID else {}
 
@@ -15,7 +15,7 @@ class CosenseClient:
         async with httpx.AsyncClient() as client:
             response = await client.get(url, headers=self.headers)
             response.raise_for_status()
-            data = response.json()
+            data: dict[str, Any] = response.json()
             return data.get("pages", [])
 
     async def get_page_content(self, page_title: str) -> str:

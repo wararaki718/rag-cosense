@@ -1,11 +1,16 @@
 import torch
 from transformers import AutoModelForMaskedLM, AutoTokenizer
 import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 class SpladeModel:
-    def __init__(self, model_id: str = "hot-leaf-juice/splade-japanese-v3"):
+    tokenizer: Any
+    model: Any
+    device: torch.device
+
+    def __init__(self, model_id: str = "hot-leaf-juice/splade-japanese-v3") -> None:
         self.model_id = model_id
         logger.info(f"Loading model {model_id}...")
         self.tokenizer = AutoTokenizer.from_pretrained(model_id)

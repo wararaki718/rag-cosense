@@ -7,7 +7,7 @@ from src.core.config import settings
 router = APIRouter()
 
 @router.get("/health")
-async def health_check() -> Any:
+async def health_check() -> dict[str, Any]:
     """Check the health of the application and its downstream services.
 
     Performs connectivity tests for Elasticsearch and Ollama.
@@ -15,7 +15,7 @@ async def health_check() -> Any:
     Returns:
         dict: A dictionary containing the status of each service.
     """
-    health_status = {
+    health_status: dict[str, Any] = {
         "status": "ok",
         "services": {
             "elasticsearch": "unknown",

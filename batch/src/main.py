@@ -13,7 +13,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("batch")
 
-async def main():
+async def main() -> None:
     """Main entry point for the batch synchronization job."""
     logger.info("Starting Cosense to Elasticsearch synchronization batch...")
     
