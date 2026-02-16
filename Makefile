@@ -1,4 +1,4 @@
-.PHONY: help setup up down restart logs ps build health
+.PHONY: help setup up down restart logs ps build health sync
 
 # Default target
 help:
@@ -7,6 +7,7 @@ help:
 	@echo "Targets:"
 	@echo "  setup    Copy .env.example to .env"
 	@echo "  up       Start all containers in background"
+	@echo "  sync     Run batch synchronization (manual)"
 	@echo "  down     Stop and remove all containers"
 	@echo "  restart  Restart all containers"
 	@echo "  logs     Show logs from all containers"
@@ -24,6 +25,9 @@ setup:
 
 up:
 	docker compose up -d
+
+sync:
+	docker compose --profile manual run --rm batch
 
 down:
 	docker compose down

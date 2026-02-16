@@ -15,14 +15,7 @@ class IndexerService:
         )
 
     async def get_sparse_embeddings(self, text: str) -> dict:
-        """Generates a sparse embedding for the given text using the encoder service.
-        
-        Args:
-            text (str): The text to embed.
-            
-        Returns:
-            dict: The generated sparse embedding (token-weight mapping).
-        """
+        """Generates a sparse embedding for the given text using the encoder service."""
         url = f"{settings.ENCODER_SERVICE_URL}/encode"
         payload = {"text": text}
         async with httpx.AsyncClient() as client:
@@ -35,7 +28,6 @@ class IndexerService:
         index_name = "cosense_pages"
         exists = await self.es.indices.exists(index=index_name)
         if not exists:
-            # Note: We use rank_features for SPLADE sparse vectors.
             await self.es.indices.create(
                 index=index_name,
                 body={
@@ -56,12 +48,7 @@ class IndexerService:
             )
 
     async def sync_pages(self, pages: List[dict], cosense_client):
-        """Synchronizes a list of pages into Elasticsearch.
-        
-        Args:
-            pages (List[dict]): Metadata of pages to sync.
-            cosense_client: Instance of CosenseClient to fetch content.
-        """
+        """Synchronizes a list of pages into Elasticsearch."""
         await self.create_index_if_not_exists()
         
         for page in pages:
@@ -82,8 +69,8 @@ class IndexerService:
                         }
                     }
                     await self.es.index(index="cosense_pages", document=doc)
+                print(f"Synced page: {title}")
             except Exception as e:
-                # Log or handle individual page failures gracefully
                 print(f"Failed to sync page {title}: {str(e)}")
 
     async def close(self):

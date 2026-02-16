@@ -9,15 +9,10 @@ WORKDIR /app
 # Install uv for dependency management
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
-# Install system dependencies if needed (fugashi might need it)
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
 # Copy dependency files
 COPY pyproject.toml .
 # Sync dependencies
-RUN uv sync --no-dev
+RUN uv sync
 
 # Final stage
 FROM python:3.12-slim
@@ -34,9 +29,10 @@ COPY src/ /app/src/
 # Ensure the app user can access the app files
 RUN chown -R appuser:appuser /app
 
-ENV PATH="/app/.venv/bin:$PATH"
+ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONPATH="/app"
 
 USER appuser
 
-EXPOSE 8001
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8001"]
+# Entry point is main.py
+CMD ["python", "src/main.py"]

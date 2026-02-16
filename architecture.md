@@ -17,10 +17,10 @@ graph TD
     subgraph Server_Side [Backend Python + FastAPI]
         API_Layer[API Endpoints]
         RAG_Engine[RAG Engine / LangChain]
-        
-        subgraph Processing_Pipeline [Processing Pipeline]
-            Ingestor[Cosense Data Ingestor]
-        end
+    end
+
+    subgraph Batch_Worker [Batch System]
+        Ingestor[Cosense Data Ingestor (Standalone)]
     end
 
     subgraph Data_Storage [Search & Vector Database]
@@ -60,7 +60,10 @@ graph TD
 ### Backend
 - **FastAPI**: Provides the REST API for the frontend.
 - **LangChain**: Orchestrates the RAG workflow (Retrieval, Prompt Construction, LLM Interaction).
-- **Ingestor**: Fetches pages from Cosense and processes them into chunks.
+
+### Batch System
+- **Standalone Batch Script**: Fetches pages from Cosense and processes them into chunks.
+- **Manual Execution**: Run via `make sync`.
 
 ### Infrastructure / Tools
 - **Elasticsearch**: A distributed search and analytics engine used for both full-text search and vector similarity search.
@@ -74,9 +77,9 @@ graph TD
 
 ### 1. Data Flow
 
-#### Ingestion Flow (Async Syncing) [IMPLEMENTED]
-1. **Initiate**: Frontend calls `POST /api/v1/index/sync`. Backend returns sync status.
-2. **Fetch**: A background task calls the Cosense API to retrieve page lists and metadata.
+#### Ingestion Flow (Manual Batch Sync) [IMPLEMENTED]
+1. **Initiate**: User runs `make sync`.
+2. **Fetch**: The batch script calls the Cosense API to retrieve page lists and metadata.
 3. **Chunking**: Split via `RecursiveCharacterTextSplitter`.
 4. **Sparse Embedding**: Call **Encoder Service** (`/encode`) to generate SPLADE sparse vectors.
 5. **Persistence**: Upsert into **Elasticsearch** using `rank_features` for the sparse vector and `text` for content.
@@ -123,35 +126,13 @@ Following `api-contract.instructions.md`, all responses wrap data or errors:
   }
   ```
 
-##### 2. `POST /api/index/sync`
-- **Purpose**: Start an asynchronous background task to sync Cosense pages.
-- **Request Body**: `{ "projects": "string[]" }`
-- **Behavior**: Uses FastAPI `BackgroundTasks`. 
-    - *Future Note*: Consider persisting task state in a lightweight database (e.g., SQLite) for persistence across backend restarts.
-- **Response Data**: `{ "task_id": "string", "status": "accepted" }`
-
-##### 3. `GET /api/index/sync/{task_id}`
-- **Purpose**: Poll the progress of a specific sync task.
-- **Response Data**:
-  ```json
-  {
-    "task_id": "string",
-    "status": "processing | completed | failed",
-    "progress": {
-      "total_pages": "number",
-      "synced_pages": "number",
-      "errors": "string[]"
-    }
-  }
-  ```
-
-##### 4. `GET /api/v1/health`
+##### 2. `GET /api/v1/health`
 - **Purpose**: System health check.
 - **Response Data**:
   ```json
   {
-    "status": "connected",
-    "details": {
+    "status": "ok",
+    "services": {
       "elasticsearch": "connected",
       "ollama": "connected",
       "encoder": "connected"
@@ -160,7 +141,6 @@ Following `api-contract.instructions.md`, all responses wrap data or errors:
   ```
 
 #### Frontend Integration Notes
-- **Polling**: Frontend handles `POST /api/index/sync` by capturing the `task_id` and polling the status endpoint until `status === 'completed'`.
 - **Error Handling**: Use the `code` field to trigger specific UI feedback (e.g., "Ollama is down" or "Authentication required").
 
 ### 3. Search & Retrieval Strategy
