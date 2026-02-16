@@ -20,7 +20,7 @@ graph TD
     end
 
     subgraph Batch_Worker [Batch System]
-        Ingestor[Cosense Data Ingestor (Standalone)]
+        Ingestor["Cosense Data Ingestor (Standalone)"]
     end
 
     subgraph Data_Storage [Search & Vector Database]
