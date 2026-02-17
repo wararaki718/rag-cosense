@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import Chat from './components/Chat'
+import Chat from "./components/Chat";
 
 function App() {
   return (
@@ -13,7 +12,7 @@ function App() {
         <Chat />
       </main>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

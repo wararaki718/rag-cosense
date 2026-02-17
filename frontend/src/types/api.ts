@@ -7,13 +7,13 @@ export interface Source {
 export interface ChatRequest {
   query: string;
   context_history?: Array<{
-    role: 'user' | 'assistant';
+    role: "user" | "assistant";
     content: string;
   }>;
 }
 
 export interface ChatSuccessResponse {
-  status: 'success';
+  status: "success";
   data: {
     answer: string;
     sources: Source[];
@@ -21,7 +21,7 @@ export interface ChatSuccessResponse {
 }
 
 export interface ChatErrorResponse {
-  status: 'error';
+  status: "error";
   message: string;
   code: string;
 }
