@@ -24,17 +24,23 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Create non-root user
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+# Create non-root user with home directory
+RUN groupadd -r appuser && useradd -r -g appuser -m appuser
 
 # Copy virtual environment and source code
 COPY --from=builder /app/.venv /app/.venv
 COPY src/ /app/src/
 
-# Ensure the app user can access the app files
-RUN chown -R appuser:appuser /app
+# Pre-download the model to the image (optional but recommended for speed and stability)
+ENV PATH="/app/.venv/bin:$PATH" \
+    HF_HOME="/app/.cache/huggingface"
 
-ENV PATH="/app/.venv/bin:$PATH"
+RUN mkdir -p $HF_HOME && \
+    python -c "from transformers import AutoTokenizer, AutoModelForMaskedLM; \
+              model_id = 'aken12/splade-japanese-v3'; \
+              AutoTokenizer.from_pretrained(model_id); \
+              AutoModelForMaskedLM.from_pretrained(model_id)" && \
+    chown -R appuser:appuser /app
 
 USER appuser
 

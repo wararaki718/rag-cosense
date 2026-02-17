@@ -10,7 +10,7 @@ class SpladeModel:
     model: Any
     device: torch.device
 
-    def __init__(self, model_id: str = "hot-leaf-juice/splade-japanese-v3") -> None:
+    def __init__(self, model_id: str = "aken12/splade-japanese-v3") -> None:
         self.model_id = model_id
         logger.info(f"Loading model {model_id}...")
         self.tokenizer = AutoTokenizer.from_pretrained(model_id)

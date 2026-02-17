@@ -160,7 +160,7 @@ Following `api-contract.instructions.md`, all responses wrap data or errors:
 - **Model Selection**: **Gemma 3 (4b recommended for speed, 12b for quality)**.
     - **Inference**: High-quality natural language generation and instruction following.
 - **Encoder Service**:
-    - **Model**: `hot-leaf-juice/splade-japanese-v3`.
+    - **Model**: `aken12/splade-japanese-v3`.
     - **Role**: Specialized in Japanese sparse vector generation for search.
 - **Initialization & Model Management**:
     - **Flow**:
