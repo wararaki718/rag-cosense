@@ -23,15 +23,16 @@ describe("useChat", () => {
 
   it("should add a user message and then an assistant message on success", async () => {
     const mockResponse = {
+      status: "success" as const,
       data: {
         answer: "Hello! How can I help you?",
         sources: [
-          { title: "Page 1", url: "https://scrapbox.io/project/Page_1" },
+          { title: "Page 1", url: "https://scrapbox.io/project/Page_1", score: 0.9 },
         ],
       },
     };
 
-    (sendChatMessage as any).mockResolvedValue(mockResponse);
+    vi.mocked(sendChatMessage).mockResolvedValue(mockResponse);
 
     const { result } = renderHook(() => useChat());
 
@@ -55,7 +56,7 @@ describe("useChat", () => {
 
   it("should set error state when sendMessage fails", async () => {
     const errorMessage = "Network Error";
-    (sendChatMessage as any).mockRejectedValue(new Error(errorMessage));
+    vi.mocked(sendChatMessage).mockRejectedValue(new Error(errorMessage));
 
     const { result } = renderHook(() => useChat());
 

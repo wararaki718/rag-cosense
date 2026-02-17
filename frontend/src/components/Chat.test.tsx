@@ -10,7 +10,7 @@ vi.mock("../hooks/useChat", () => ({
 
 describe("Chat Component", () => {
   it("renders welcome message when there are no messages", () => {
-    (useChat as any).mockReturnValue({
+    vi.mocked(useChat).mockReturnValue({
       messages: [],
       isLoading: false,
       error: null,
@@ -28,10 +28,10 @@ describe("Chat Component", () => {
   it("renders messages correctly", () => {
     const messages = [
       { role: "user" as const, content: "Hello" },
-      { role: "assistant" as const, content: "Hi there!", sources: [{ title: "Source 1", url: "#" }] },
+      { role: "assistant" as const, content: "Hi there!", sources: [{ title: "Source 1", url: "#", score: 1.0 }] },
     ];
 
-    (useChat as any).mockReturnValue({
+    vi.mocked(useChat).mockReturnValue({
       messages,
       isLoading: false,
       error: null,
@@ -47,7 +47,7 @@ describe("Chat Component", () => {
 
   it("calls sendMessage when form is submitted", () => {
     const sendMessage = vi.fn();
-    (useChat as any).mockReturnValue({
+    vi.mocked(useChat).mockReturnValue({
       messages: [],
       isLoading: false,
       error: null,
@@ -66,7 +66,7 @@ describe("Chat Component", () => {
   });
 
   it("shows loading indicator when isLoading is true", () => {
-    (useChat as any).mockReturnValue({
+    vi.mocked(useChat).mockReturnValue({
       messages: [{ role: "user", content: "Hello" }],
       isLoading: true,
       error: null,

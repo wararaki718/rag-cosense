@@ -1,4 +1,3 @@
-import pytest
 from src.core.config import Settings
 
 def test_should_have_correct_default_settings():

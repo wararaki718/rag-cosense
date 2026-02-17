@@ -1,7 +1,6 @@
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 from src.services.cosense import CosenseClient
-from src.core.config import settings
 
 @pytest.mark.anyio
 async def test_should_fetch_all_pages_successfully():

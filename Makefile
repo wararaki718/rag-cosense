@@ -1,4 +1,4 @@
-.PHONY: help setup up down restart logs ps build health sync
+.PHONY: help setup up down restart logs ps build health sync lint test
 
 # Default target
 help:
@@ -14,6 +14,8 @@ help:
 	@echo "  ps       List running containers"
 	@echo "  build    Build or rebuild services"
 	@echo "  health   Check backend health endpoint"
+	@echo "  lint     Run linting and type checking for all components"
+	@echo "  test     Run unit tests for all components"
 
 setup:
 	@if [ ! -f .env ]; then \
@@ -46,3 +48,15 @@ build:
 
 health:
 	curl http://localhost:8000/api/v1/health
+
+lint:
+	cd backend && uv run ruff check . && uv run mypy .
+	cd batch && uv run ruff check . && uv run mypy .
+	cd encoder && uv run ruff check . && uv run mypy .
+	cd frontend && npm run lint && npm run type-check
+
+test:
+	cd backend && uv run pytest
+	cd batch && uv run pytest
+	cd encoder && uv run pytest
+	cd frontend && npm test -- --run

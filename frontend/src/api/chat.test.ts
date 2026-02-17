@@ -12,6 +12,7 @@ describe("chat api", () => {
       data: { answer: "test answer", sources: [] },
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (fetch as any).mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(mockResponse),
@@ -37,10 +38,10 @@ describe("chat api", () => {
       code: "API_ERROR",
     };
 
-    (fetch as any).mockResolvedValue({
+    vi.mocked(fetch).mockResolvedValue({
       ok: false,
       json: () => Promise.resolve(mockErrorResponse),
-    });
+    } as Response);
 
     await expect(sendChatMessage({ query: "test", context_history: [] })).rejects.toThrow("Something went wrong");
   });
