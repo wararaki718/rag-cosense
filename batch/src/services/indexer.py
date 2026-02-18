@@ -1,5 +1,6 @@
 from typing import List, Any
 import httpx
+import re
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from elasticsearch import AsyncElasticsearch
 from src.services.cosense import CosenseClient
@@ -14,6 +15,14 @@ class IndexerService:
             chunk_size=1000,
             chunk_overlap=100
         )
+
+    def _clean_text(self, text: str) -> str:
+        """Removes HTML tags and other noise from the text."""
+        # Remove HTML tags
+        text = re.sub(r'<[^>]*>', '', text)
+        # Normalize whitespace
+        text = re.sub(r'\s+', ' ', text).strip()
+        return text
 
     async def get_sparse_embeddings(self, text: str) -> dict[str, Any]:
         """Generates a sparse embedding for the given text using the encoder service."""
@@ -57,7 +66,8 @@ class IndexerService:
             title = page["title"]
             try:
                 content = await cosense_client.get_page_content(title)
-                chunks = self.text_splitter.split_text(content)
+                cleaned_content = self._clean_text(content)
+                chunks = self.text_splitter.split_text(cleaned_content)
                 
                 for i, chunk in enumerate(chunks):
                     sparse_vector = await self.get_sparse_embeddings(chunk)

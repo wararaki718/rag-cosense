@@ -1,4 +1,5 @@
 import torch
+import re
 from transformers import AutoModelForMaskedLM, AutoTokenizer
 import logging
 from typing import Any
@@ -38,9 +39,11 @@ class SpladeModel:
             if not token or val <= 0.01:
                 continue
             
-            # Elasticsearch rank_features: no dots, no leading underscore
-            safe_token = token.replace(".", "_")
-            if safe_token.startswith("_"):
+            # Elasticsearch rank_features: Forbidden characters in field names
+            # Reference: . , * ? < > | / \ [ ] { } ( ) = ! & ^ ~ : ; ' " ` and SPACE
+            # Also must not start with _ or -
+            safe_token = re.sub(r'[\s.,*?<>\/|\\\[\]{}()=!&^~:;\'"`]', '_', token)
+            if safe_token.startswith(('_', '-')):
                 safe_token = f"u{safe_token}"
                 
             result[safe_token] = float(val)

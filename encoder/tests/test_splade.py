@@ -64,7 +64,7 @@ def test_splade_model_encode(mock_model_cls, mock_tokenizer_cls):
 @patch("src.models.splade.AutoTokenizer")
 @patch("src.models.splade.AutoModelForMaskedLM")
 def test_splade_model_encode_special_tokens(mock_model_cls, mock_tokenizer_cls):
-    """Test that special characters like dots and leading underscores are handled correctly."""
+    """Test that special characters forbidden in ES rank_features are handled correctly."""
     # Setup mocks
     mock_tokenizer = MagicMock()
     mock_model = MagicMock()
@@ -75,6 +75,9 @@ def test_splade_model_encode_special_tokens(mock_model_cls, mock_tokenizer_cls):
     # Token 1: "." -> should become "u_"
     # Token 2: "_admin" -> should become "u_admin"
     # Token 3: "abc.def" -> should become "abc_def"
+    # Token 4: "[CLS]" -> should become "u_CLS_"
+    # Token 5: "a<b>c" -> should become "a_b_c"
+    # Token 6: "-abc" -> should become "u-abc"
     
     # Mock model output (logits)
     # Vocab size: 10
@@ -82,6 +85,9 @@ def test_splade_model_encode_special_tokens(mock_model_cls, mock_tokenizer_cls):
     mock_logits[0, 0, 1] = 1.0  # token "."
     mock_logits[0, 0, 2] = 2.0  # token "_admin"
     mock_logits[0, 0, 3] = 3.0  # token "abc.def"
+    mock_logits[0, 0, 4] = 4.0  # token "[CLS]"
+    mock_logits[0, 0, 5] = 5.0  # token "a<b>c"
+    mock_logits[0, 0, 6] = 6.0  # token "-abc"
     
     mock_output = MagicMock()
     mock_output.logits = mock_logits
@@ -92,7 +98,10 @@ def test_splade_model_encode_special_tokens(mock_model_cls, mock_tokenizer_cls):
         mapping = {
             1: ".",
             2: "_admin",
-            3: "abc.def"
+            3: "abc.def",
+            4: "[CLS]",
+            5: "a<b>c",
+            6: "-abc"
         }
         return mapping.get(token_ids[0], "unknown")
         
@@ -108,8 +117,14 @@ def test_splade_model_encode_special_tokens(mock_model_cls, mock_tokenizer_cls):
     assert "u_" in result, "Dot should be replaced by '_' and prefixed with 'u' because it starts with '_'"
     assert "u_admin" in result, "Leading underscore should be prefixed with 'u'"
     assert "abc_def" in result, "Dots in middle should be replaced with '_'"
+    assert "u_CLS_" in result, "Enclosing brackets should be replaced with '_' and prefixed with 'u' if starts with '_'"
+    assert "a_b_c" in result, "Brackets in middle should be replaced with '_'"
+    assert "u-abc" in result, "Leading hyphen should be prefixed with 'u'"
     
     # Verify values are correct
     assert result["u_"] == pytest.approx(torch.log1p(torch.tensor(1.0)).item())
     assert result["u_admin"] == pytest.approx(torch.log1p(torch.tensor(2.0)).item())
     assert result["abc_def"] == pytest.approx(torch.log1p(torch.tensor(3.0)).item())
+    assert result["u_CLS_"] == pytest.approx(torch.log1p(torch.tensor(4.0)).item())
+    assert result["a_b_c"] == pytest.approx(torch.log1p(torch.tensor(5.0)).item())
+    assert result["u-abc"] == pytest.approx(torch.log1p(torch.tensor(6.0)).item())

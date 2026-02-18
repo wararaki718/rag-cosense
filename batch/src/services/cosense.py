@@ -1,4 +1,5 @@
 import httpx
+import urllib.parse
 from typing import List, Dict, Any
 from src.core.config import settings
 
@@ -20,7 +21,8 @@ class CosenseClient:
 
     async def get_page_content(self, page_title: str) -> str:
         """Fetches the full text content of a specific page."""
-        url = f"{self.base_url}/pages/{settings.COSENSE_PROJECT_NAME}/{page_title}/text"
+        encoded_title = urllib.parse.quote(page_title, safe="")
+        url = f"{self.base_url}/pages/{settings.COSENSE_PROJECT_NAME}/{encoded_title}/text"
         async with httpx.AsyncClient() as client:
             response = await client.get(url, headers=self.headers)
             response.raise_for_status()
