@@ -35,7 +35,14 @@ class SpladeModel:
         result = {}
         for idx, val in zip(indices.tolist(), values.tolist()):
             token = self.tokenizer.decode([idx]).strip()
-            if token and val > 0.01:
-                result[token] = float(val)
+            if not token or val <= 0.01:
+                continue
+            
+            # Elasticsearch rank_features: no dots, no leading underscore
+            safe_token = token.replace(".", "_")
+            if safe_token.startswith("_"):
+                safe_token = f"u{safe_token}"
+                
+            result[safe_token] = float(val)
                 
         return result
