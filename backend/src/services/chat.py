@@ -136,10 +136,11 @@ class ChatService:
         
         answer = "エラーが発生しました。しばらくしてからもう一度お試しください。"
         try:
+            logger.info(f"Sending request to Ollama: {self.ollama_url}")
             async with httpx.AsyncClient() as client:
-                response = await client.post(self.ollama_url, json=payload, timeout=120.0)
-                
-                # Check for 404 (common when model is missing)
+                # Ollama can take long for complex queries or big models
+                response = await client.post(self.ollama_url, json=payload, timeout=300.0)
+                logger.debug(f"Ollama response status: {response.status_code}")
                 if response.status_code == 404:
                     error_msg = f"エラー: Ollama モデル（{settings.EMBEDDING_MODEL}）が見つかりません。'docker compose exec ollama ollama pull {settings.EMBEDDING_MODEL}' を実行してください。"
                     logger.error(f"Ollama model not found or invalid URL: {response.status_code}")

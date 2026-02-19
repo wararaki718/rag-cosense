@@ -32,18 +32,16 @@ export async function request<T>(
   }
 
   const contentType = response.headers.get("content-type") || "";
-  if (!contentType.includes("application/json")) {
+  if (!contentType.toLowerCase().includes("application/json")) {
     const text = await response.text();
-    // Use a simpler approach without separate logger if not imported, 
-    // but console.error is common in client-side helpers
-    console.error(`Non-JSON response from ${url}:`, response.status, text.substring(0, 200));
+    console.error(`Non-JSON response from ${url}:`, response.status, contentType, text.substring(0, 500));
     
     if (response.status === 502 || response.status === 504) {
       throw new ServiceError("Cannot reach the server. Please ensure the backend is running.", "SERVER_UNREACHABLE");
     }
     
     throw new ServiceError(
-      `Server Error (${response.status}): The server returned an invalid response format (not JSON).`,
+      `Server Error (${response.status}): The server returned an invalid response format (not JSON). Content-Type: ${contentType}`,
       "INVALID_RESPONSE_FORMAT"
     );
   }
