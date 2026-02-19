@@ -9,7 +9,7 @@ router = APIRouter()
 def get_chat_service() -> ChatService:
     return ChatService()
 
-@router.post("", response_model=ChatSuccessResponse)
+@router.post("/chat", response_model=ChatSuccessResponse)
 async def chat(
     request: ChatRequest,
     chat_service: ChatService = Depends(get_chat_service)

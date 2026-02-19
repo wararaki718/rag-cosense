@@ -15,6 +15,7 @@ describe("chat api", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (fetch as any).mockResolvedValue({
       ok: true,
+      headers: { get: () => "application/json" },
       json: () => Promise.resolve(mockResponse),
     });
 
@@ -40,8 +41,9 @@ describe("chat api", () => {
 
     vi.mocked(fetch).mockResolvedValue({
       ok: false,
+      headers: { get: () => "application/json" },
       json: () => Promise.resolve(mockErrorResponse),
-    } as Response);
+    } as unknown as Response);
 
     await expect(sendChatMessage({ query: "test", context_history: [] })).rejects.toThrow("Something went wrong");
   });

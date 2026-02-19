@@ -6,7 +6,7 @@ from src.core.config import settings
 
 router = APIRouter()
 
-@router.get("")
+@router.get("/health")
 async def health_check() -> dict[str, Any]:
     """Check the health of the application and its downstream services.
 

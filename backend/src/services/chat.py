@@ -19,8 +19,10 @@ class ChatService:
         """Removes HTML tags and other noise from the text."""
         # Remove HTML tags
         text = re.sub(r'<[^>]*>', '', text)
-        # Normalize whitespace (but keep some newlines for clarity in chat)
-        text = re.sub(r'[ \t]+', ' ', text).strip()
+        # Remove @username and @tag
+        text = re.sub(r'@[a-zA-Z0-9_-]+', '', text)
+        # Normalize whitespace
+        text = re.sub(r'\s+', ' ', text).strip()
         return text
 
     async def get_sparse_embeddings(self, query: str) -> dict[str, float]:

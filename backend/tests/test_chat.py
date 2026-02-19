@@ -99,7 +99,45 @@ async def test_chat_service_clean_text():
     """Test the _clean_text method in ChatService."""
     service = ChatService()
     
+    # Test case 1: HTML tags removal
+    html_text = "<p>This is <b>bold</b> and <i>italic</i>.</p>"
+    assert service._clean_text(html_text) == "This is bold and italic."
+    
+    # Test case 2: Special tag removal (e.g., @python-engineer)
+    special_tag_text = "Task for @python-engineer: fix the bug."
+    assert service._clean_text(special_tag_text) == "Task for : fix the bug."
+    
+    # Test case 3: Mixed content
+    mixed_text = "<div>Hello @world, check <a href='#'>this</a>. @python-engineer is here.</div>"
+    assert service._clean_text(mixed_text) == "Hello , check this. is here."
+    
+    # Test case 4: Excessive whitespace
+    whitespace_text = "  Too    many \n\n spaces   and \t tabs.  "
+    assert service._clean_text(whitespace_text) == "Too many spaces and tabs."
+
+@pytest.mark.anyio
+async def test_chat_endpoint_routing_robustness():
+    """Test the /chat endpoint to verify it handles routing correctly."""
+    # This ensures that /api/v1/chat works.
+    mock_service_instance = MagicMock()
+    mock_service_instance.process_query = AsyncMock(return_value=("Answer", []))
+    app.dependency_overrides[get_chat_service] = lambda: mock_service_instance
+    
+    try:
+        # FastAPI handles trailing slash redirects by default unless configured otherwise.
+        # Test exact match
+        response = client.post(f"{settings.API_V1_STR}/chat", json={"query": "test"})
+        assert response.status_code == 200
+        
+        # Test trailing slash match (FastAPI should redirect or handle if configured)
+        # Note: TestClient follows redirects by default.
+        response_slash = client.post(f"{settings.API_V1_STR}/chat/", json={"query": "test"})
+        assert response_slash.status_code == 200
+    finally:
+        app.dependency_overrides = {}
+    
     # Test cases for cleaning
+    service = ChatService()
     dirty_text = "<p>Hello <b>World</b>!</p>   Extra   spaces.   "
     clean_text = service._clean_text(dirty_text)
     assert clean_text == "Hello World! Extra spaces."
