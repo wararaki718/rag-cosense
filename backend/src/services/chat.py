@@ -137,6 +137,12 @@ class ChatService:
             async with httpx.AsyncClient() as client:
                 response = await client.post(self.ollama_url, json=payload, timeout=120.0)
                 
+                # Check for 404 (common when model is missing)
+                if response.status_code == 404:
+                    error_msg = f"エラー: Ollama モデル（{settings.EMBEDDING_MODEL}）が見つかりません。'docker compose exec ollama ollama pull {settings.EMBEDDING_MODEL}' を実行してください。"
+                    logger.error(f"Ollama model not found or invalid URL: {response.status_code}")
+                    return error_msg, sources
+
                 # Check for non-JSON response which might happen on server errors (HTML)
                 content_type = response.headers.get("content-type", "")
                 if "application/json" not in content_type:
@@ -146,6 +152,9 @@ class ChatService:
                     response.raise_for_status()
                     data = response.json()
                     answer = data.get("response", "回答を生成できませんでした。")
+        except httpx.HTTPStatusError as e:
+            logger.error(f"Ollama HTTP status error: {e.response.status_code} - {e.response.text}")
+            answer = f"Ollama エラーが発生しました ({e.response.status_code})。モデルがプルされているか確認してください。"
         except Exception as e:
             logger.error(f"Ollama inference failed: {e}")
             # If it's a known error message, might want to be more specific, 
